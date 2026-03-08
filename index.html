@@ -1,0 +1,249 @@
+# Tmiee
+let hour = new Date().getHours()
+
+if(hour < 12){
+alert("Good morning!")
+}
+  server.js
+package.json
+database.json
+
+/public
+  index.html
+  chat.html
+  create.html
+  style.css
+  {
+ "name": "pink-ai-chat",
+ "version": "1.0.0",
+ "dependencies": {
+  "express": "^4.18.2",
+  "body-parser": "^1.20.2"
+ }
+}
+  const express = require("express")
+const bodyParser = require("body-parser")
+const fs = require("fs")
+
+const app = express()
+
+app.use(bodyParser.json())
+app.use(express.static("public"))
+
+let db = JSON.parse(fs.readFileSync("database.json"))
+
+app.get("/chars",(req,res)=>{
+ res.json(db.chars)
+})
+
+app.post("/createChar",(req,res)=>{
+
+ let char = req.body
+
+ db.chars.push(char)
+
+ fs.writeFileSync(
+  "database.json",
+  JSON.stringify(db,null,2)
+ )
+
+ res.json({ok:true})
+})
+
+app.post("/chat",(req,res)=>{
+
+ let msg = req.body.msg
+ let char = req.body.char
+
+ let reply =
+ char.name +
+ " nhìn bạn và mỉm cười.\n" +
+ "\"Em đang nghe đây...\""
+
+ res.json({reply})
+})
+
+app.listen(3000,()=>{
+ console.log("Server running")
+})
+  {
+ "chars":[
+  {
+   "name":"Sakura",
+   "avatar":"https://i.imgur.com/abc.png",
+   "personality":"dịu dàng và hơi tsundere",
+   "firstMessage":"Anh đến rồi à? Em chờ anh lâu lắm đó..."
+  }
+ ]
+}
+  body{
+ background:#ffd6e7;
+ font-family:sans-serif;
+}
+
+header{
+ background:#ff8ec7;
+ padding:10px;
+ text-align:center;
+ color:white;
+}
+
+.card{
+ background:white;
+ padding:10px;
+ border-radius:10px;
+ margin:10px;
+}
+
+button{
+ background:#ff6fa5;
+ color:white;
+ border:none;
+ padding:8px;
+ border-radius:8px;
+}
+  <!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+<h2>🌸 Pink AI World</h2>
+<a href="create.html">Tạo Char</a>
+</header>
+
+<div id="chars"></div>
+
+<script>
+
+fetch("/chars")
+.then(r=>r.json())
+.then(data=>{
+
+ let div=document.getElementById("chars")
+
+ data.forEach(c=>{
+
+  div.innerHTML+=`
+  <div class="card">
+   <h3>${c.name}</h3>
+   <p>${c.personality}</p>
+   <a href="chat.html?char=${c.name}">
+   <button>Chat</button>
+   </a>
+  </div>
+  `
+ })
+
+})
+
+</script>
+
+</body>
+  <!DOCTYPE html>
+<html>
+
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+<h2>Chat</h2>
+⭐ <span id="stars">100</span>
+</header>
+
+<div id="chat"></div>
+
+<input id="msg">
+<button onclick="send()">Send</button>
+
+<script>
+
+let stars = 100
+
+function add(sender,text){
+
+ let chat=document.getElementById("chat")
+
+ chat.innerHTML+=
+ "<p><b>"+sender+":</b> "+text+"</p>"
+
+}
+
+async function send(){
+
+ let text=document.getElementById("msg").value
+
+ if(stars<2){
+  alert("Hết sao!")
+  return
+ }
+
+ stars -=2
+ document.getElementById("stars").innerText=stars
+
+ add("You",text)
+
+ let res=await fetch("/chat",{
+ method:"POST",
+ headers:{
+  "Content-Type":"application/json"
+ },
+ body:JSON.stringify({
+  msg:text,
+  char:{name:"Sakura"}
+ })
+ })
+
+ let data=await res.json()
+
+ add("AI",data.reply)
+
+}
+
+</script>
+
+</body>
+</html>
+
+</html>
+<h2>Tạo nhân vật</h2>
+
+<input id="name" placeholder="Tên"><br>
+<input id="avatar" placeholder="Link avatar"><br>
+
+<textarea id="personality"
+placeholder="Tính cách"></textarea>
+
+<br>
+
+<button onclick="create()">Tạo</button>
+
+<script>
+
+async function create(){
+
+ let char={
+  name:document.getElementById("name").value,
+  avatar:document.getElementById("avatar").value,
+  personality:document.getElementById("personality").value
+ }
+
+ await fetch("/createChar",{
+  method:"POST",
+  headers:{
+   "Content-Type":"application/json"
+  },
+  body:JSON.stringify(char)
+ })
+
+ alert("Đã tạo nhân vật!")
+
+}
+
+</script>
